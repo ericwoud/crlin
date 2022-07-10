@@ -26,7 +26,7 @@ Setup your chromebook to Developer Mode and set it up to be able to boot from us
 Download the scripts and copy the scripts, using the following one-liner:
 
 ```
-export p="https://github.com/ericwoud/crlin/raw/master/" ; sudo mkdir -p /usr/local/sbin/ ; for f in crlin-build.sh crlin-prio.sh crlin-tools-build.sh crlin-postinstall.sh crlin-boot.sh ; do sudo curl -Lo /usr/local/sbin/$f $p$f ; done ; sudo chmod +x /usr/local/sbin/crlin-*
+export p="https://github.com/ericwoud/crlin/raw/main/" ; sudo mkdir -p /usr/local/sbin/ ; for f in crlin-build.sh crlin-prio.sh crlin-tools-build.sh crlin-postinstall.sh crlin-boot.sh ; do sudo curl -Lo /usr/local/sbin/$f $p$f ; done ; sudo chmod +x /usr/local/sbin/crlin-*
 ```
 
 Now execute the first part of the build-script:

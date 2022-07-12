@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pacman -S --needed base-devel git bc evtest busybox kexec-tools
+pacman -S --needed --noconfirm base-devel git bc evtest busybox kexec-tools
 
 CHAINCMDLINE="iomem=relaxed quiet loglevel=2"
 

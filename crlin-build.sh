@@ -68,45 +68,51 @@ function format {
   makefs
   exit
 }
+
 function dualboot {
   last=$(cgpt show ${device} | grep 'Sec GPT table' | awk '{ print $1 }')
   statestart=$(cgpt show -i 1 -b -n ${device})
   statesize=$(cgpt show -i 1 -s -n ${device})
   oemstart=$(cgpt show -i 8 -b -n ${device})
   oemsize=$(cgpt show -i 8 -s -n ${device})
-  unusedstart=$(cgpt show -i 9 -b -n ${device})
+  parted ${device} rm 6
+  parted ${device} rm 7
+  sync
+  partprobe ${device}
+  udevadm settle
+  e2fsck -f -p "${partdev}1"
+  sync
+  align=$(( (statestart+(STATEFULSIZE*2048)) % (SD_ERASE_SIZE_MB * 2048) ))
   if [ "$statesize" -gt "$((STATEFULSIZE*2048))" ]; then
-    echo "Resizing stateful partition..."
-    e2fsck -f -p "${partdev}1"
+    echo "Shrinking stateful partition..."
+    resize2fs "${partdev}1" "$((STATEFULSIZE*2048))s"
+    sync
+    cgpt add -i 1 -b "$statestart" -s $(( (STATEFULSIZE*2048)+$align )) -l STATE ${device}
+    sync
+  else
+    echo "Expanding stateful partition..."
+    cgpt add -i 1 -b "$statestart" -s $(( (STATEFULSIZE*2048)+$align )) -l STATE ${device}
     sync
     resize2fs "${partdev}1" "$((STATEFULSIZE*2048))s"
     sync
-    e2fsck -f -p "${partdev}1"
-    sync
-    echo "Updating partition table..."
-    cgpt add -i 1 -b "$statestart" -s $((STATEFULSIZE*2048)) -l STATE ${device}
-    sync
-    cgpt repair ${device}
-    sync
-    partprobe ${device}
-    statesize=$(cgpt show -i 1 -s -n ${device})
   fi
-  # Original location 2 sectors before OEM partition, size 1 sector
-  cgpt add -i 6 -b $(($unusedstart-2)) -s 1           -S 1 -T 15 -P 15 -l KERN-C -t kernel ${device}
+  e2fsck -f -p "${partdev}1"
   sync
-  # Original location 1 sector before OEM partition, size 1 sector
-  cgpt add -i 7 -b $(($unusedstart-1)) -s 1           -S 1 -P 5        -l ROOT-C -t rootfs ${device}
+  cgpt repair ${device}
   sync
+  partprobe ${device}
+  statesize=$(cgpt show -i 1 -s -n ${device})
   unallocsize=$(parted ${device} unit s print free | grep -A1 "STATE" | tail -n +2 | awk '{print $3}')
   unallocsize=${unallocsize/s/}
+  unallocstart=$(($statestart+$statesize))
   echo UNALLOCSIZE : $unallocsize
   if [ "$unallocsize" -gt "$((4*1024*2048))" ]; then
     # More then 4 Gigabytes freed up space
     # Create kernel C partition after OEM partition (reserved space)
-    cgpt add -i 6 -b $(($oemstart+$oemsize)) -s $((16*2048))     -S 1 -T 15 -P 3 -l KERN-C -t kernel ${device}
+    cgpt add -i 6 -b $(($oemstart+$oemsize)) -s $((16*2048)) -S 1 -T 15 -P 3 -l KERN-C -t kernel ${device}
     sync
     # Create rootfs C partition after STATE partition (freed space)
-    cgpt add -i 7 -b $(($statestart+$statesize)) -s $unallocsize -S 1 -P 5       -l ROOT-C -t rootfs ${device}
+    cgpt add -i 7 -b $(($unallocstart)) -s $(($unallocsize)) -S 1       -P 5 -l ROOT-C -t rootfs ${device}
     sync
   fi
   partprobe ${device}
@@ -291,10 +297,17 @@ EOT
 
 schroot="chroot $rootfsdir"
 
-[ "$r" = true ] && rootfs || $schroot
-
-[ "$b" = true ] && $schroot bash /usr/local/sbin/crlin-tools-build.sh
-[ "$b" = true ] && $schroot bash /usr/local/sbin/crlin-boot.sh "${partdev}6"
+if [ "$r" = true ]; then
+  rootfs
+  exit
+elif [ "$b" = true ]; then
+  $schroot bash /usr/local/sbin/crlin-tools-build.sh
+  $schroot bash /usr/local/sbin/crlin-boot.sh "${partdev}6"
+  exit
+else
+  $schroot
+  exit
+fi
 
 exit
 

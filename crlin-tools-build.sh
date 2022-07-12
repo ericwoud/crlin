@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pacman -S --needed base-devel linux-headers git bc inetutils cmake meson libusb libftdi cmocka dkms
+pacman -S --needed --noconfirm base-devel linux-headers git bc inetutils cmake meson libusb libftdi cmocka dkms libyaml
 
 packages="chromeos-gsctool-git chromeos-acpi-dkms-git chromeos-flashrom-git chromeos-vboot-reference-git"
 

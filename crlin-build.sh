@@ -82,7 +82,8 @@ function dualboot {
   udevadm settle
   e2fsck -f -p "${partdev}1"
   sync
-  align=$(( (statestart+(STATEFULSIZE*2048)) % (SD_ERASE_SIZE_MB * 2048) ))
+  align=$(( (statestart+(STATEFULSIZE*2048)) % (SD_ERASE_SIZE_MB*2048) ))
+  [ "$align" -ne "0" ] && align=$(( (SD_ERASE_SIZE_MB*2048) - $align ))
   if [ "$statesize" -gt "$((STATEFULSIZE*2048))" ]; then
     echo "Shrinking stateful partition..."
     resize2fs "${partdev}1" "$((STATEFULSIZE*2048))s"

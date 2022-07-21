@@ -79,6 +79,7 @@ systemctl reenable gdm
 systemctl reenable NetworkManager
 systemctl disable systemd-networkd
 systemctl disable systemd-resolved
+rm -vf /etc/wpa_supplicant/wpa_supplicant-wlp1s0.conf
 
 #yay -S gnome-shell-extension-dash-to-dock
 

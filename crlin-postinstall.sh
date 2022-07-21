@@ -78,6 +78,7 @@ done
 systemctl reenable gdm
 systemctl reenable NetworkManager
 systemctl disable systemd-networkd
+systemctl disable systemd-resolved
 
 #yay -S gnome-shell-extension-dash-to-dock
 
